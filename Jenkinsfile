@@ -32,7 +32,6 @@ pipeline {
         stage('Push Image to ECR Repo') {
             steps {
                 sh 'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin --password-stdin 220080856178.dkr.ecr.us-east-1.amazonaws.com'
-                sh 'docker tag 274213768634.dkr.ecr.ap-south-1.amazonaws.com/myrepo:latest myrepo:latest'
                 sh 'docker push 274213768634.dkr.ecr.ap-south-1.amazonaws.com/myrepo:latest'
                 
             }
