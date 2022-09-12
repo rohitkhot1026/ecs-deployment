@@ -43,7 +43,7 @@ pipeline {
                 sh 'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 274213768634.dkr.ecr.ap-south-1.amazonaws.com'
                 sh 'docker pull 274213768634.dkr.ecr.ap-south-1.amazonaws.com/myrepo:latest'
                 sh 'docker rm -f mypythonContainer | echo "there is no docker container named todo"'
-                sh 'docker run --name mypythonContainer -dp 8096:5000 274213768634.dkr.ecr.ap-south-1.amazonaws.com/myrepo:latest'
+                sh 'docker run --name mypythonContainer -dp 3000:3000 274213768634.dkr.ecr.ap-south-1.amazonaws.com/myrepo:latest'
             }
         }
         
