@@ -1,41 +1,51 @@
 pipeline {
     agent any
     environment {
-        ECR_REGISTRY = '123456789.dkr.ecr.us-east-1.amazonaws.com'
-        APP_REPO_NAME = 'devenes/to-do-app'
+        AWS_ACCOUNT_ID="274213768634"
+        AWS_DEFAULT_REGION="ap-south-1" 
+        CLUSTER_NAME="demo"
+        SERVICE_NAME="demo-service"
+        TASK_DEFINITION_NAME="demo-task"
+        DESIRED_COUNT="1"
+        IMAGE_REPO_NAME="myrepo"
+        IMAGE_TAG="${env.BUILD_ID}"
+        REPOSITORY_URI = "274213768634.dkr.ecr.ap-south-1.amazonaws.com/myrepo:latest"
+        ECR_REGISTRY = '274213768634.dkr.ecr.ap-south-1.amazonaws.com/myrepo'
         PATH = "/usr/local/bin/:${env.PATH}"
     }
+    
     stages {
+        stage('Cloning Git') {
+            steps {
+                checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: '', url: 'https://github.com/Aashumesh/ecr-ecs-cluster.git']]])     
+            }
+        }
+    
+
         stage('Build Docker Image') {
             steps {
-                sh 'docker build --force-rm -t "$ECR_REGISTRY/$APP_REPO_NAME:latest" .'
+                sh 'aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 274213768634.dkr.ecr.ap-south-1.amazonaws.com
+                sh 'docker build -t myrepo .'
                 sh 'docker image ls'
             }
         }
         stage('Push Image to ECR Repo') {
             steps {
-                sh 'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "$ECR_REGISTRY"'
-                sh 'docker push "$ECR_REGISTRY/$APP_REPO_NAME:latest"'
+                sh 'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin --password-stdin 220080856178.dkr.ecr.us-east-1.amazonaws.com'
+                sh 'docker tag 274213768634.dkr.ecr.ap-south-1.amazonaws.com/myrepo:latest myrepo:latest'
+                sh 'docker push 274213768634.dkr.ecr.ap-south-1.amazonaws.com/myrepo:latest'
+                
             }
         }
+        
         stage('Deploy on Docker Machine') {
             steps {
-                sh 'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "$ECR_REGISTRY"'
-                sh 'docker pull "$ECR_REGISTRY/$APP_REPO_NAME:latest"'
-                sh 'docker rm -f todo | echo "there is no docker container named todo"'
-                sh 'docker run --name todo -dp 80:3000 "$ECR_REGISTRY/$APP_REPO_NAME:latest"'
+                sh 'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 274213768634.dkr.ecr.ap-south-1.amazonaws.com'
+                sh 'docker pull 274213768634.dkr.ecr.ap-south-1.amazonaws.com/myrepo:latest'
+                sh 'docker rm -f mypythonContainer | echo "there is no docker container named todo"'
+                sh 'docker run --name mypythonContainer -dp 8096:5000 274213768634.dkr.ecr.ap-south-1.amazonaws.com/myrepo:latest'
             }
         }
-        stage('Deploy on Elastic Container Service') {
-            steps {
-                sh 'aws ecs update-service --cluster to-do-app --desired-count 1 --service to-do-app-service --task-definition to-do-app --force-new-deployment'
-            }
-        }
-    }
-    post {
-        always {
-            echo 'Deleting all local images'
-            sh 'docker image prune -af'
-        }
+        
     }
 }
